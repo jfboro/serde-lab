@@ -1,58 +1,59 @@
 use std::marker::PhantomData;
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Deserializer, Serialize, de::Visitor};
+use serde::{
+    Deserialize, Deserializer, Serialize,
+    de::{DeserializeOwned, Visitor},
+};
 use serde_json::json;
-use serde_lab::deserialization_example_print_many;
+use serde_lab::{ToPrettyStringMany, deserialization_example_print_many};
 
-struct StringToValueVisitor<V: for<'de> Deserialize<'de>> {
-    _marker: PhantomData<V>,
-    expected_result: &'static str,
-}
+struct StringToValueVisitor<T: DeserializeOwned>(PhantomData<T>);
 
-impl<'de, V> StringToValueVisitor<V>
+impl<'de, T> StringToValueVisitor<T>
 where
-    V: for<'a> Deserialize<'a>,
+    T: DeserializeOwned,
 {
-    fn new(expected_result: &'static str) -> Self {
-        Self {
-            _marker: PhantomData,
-            expected_result,
-        }
+    fn new() -> Self {
+        Self(PhantomData)
     }
 }
 
-impl<'de, V> Visitor<'de> for StringToValueVisitor<V>
+impl<'de, T> Visitor<'de> for StringToValueVisitor<T>
 where
-    V: for<'a> Deserialize<'a>,
+    T: DeserializeOwned,
 {
-    type Value = V;
+    type Value = T;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str(self.expected_result)
+        formatter.write_str(
+            format!(
+                "a valid JSON string representation of {}",
+                std::any::type_name::<T>()
+            )
+            .as_str(),
+        )
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
     {
-        serde_json::from_str::<V>(v).map_err(|e| serde::de::Error::custom(e))
+        serde_json::from_str::<T>(v).map_err(|e| serde::de::Error::custom(e))
     }
 }
 
-struct GenericDeserializer<V: for<'de> Deserialize<'de>>(PhantomData<V>);
+struct GenericDeserializer<T: DeserializeOwned>(PhantomData<T>);
 
-impl<V> GenericDeserializer<V>
+impl<T> GenericDeserializer<T>
 where
-    V: for<'de> Deserialize<'de>,
+    T: DeserializeOwned,
 {
-    fn deserialize_into_value<'de, D>(deserializer: D) -> Result<V, D::Error>
+    fn deserialize_into_value<'de, D>(deserializer: D) -> Result<T, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let visitor = StringToValueVisitor::<V>::new(
-            "a valid JSON string that could be deserialized to the given type",
-        );
+        let visitor = StringToValueVisitor::new();
         deserializer.deserialize_str(visitor)
     }
 }
@@ -90,7 +91,7 @@ pub struct PaymentMetadata {
 }
 
 fn main() {
-    let json_values = [
+    let json_strings = [
         json!({
             "id": 123,
             "amount": 1000.0,
@@ -106,9 +107,10 @@ fn main() {
             "amount": 2000.0,
             "metadata": "This is any metadata in any random format",
         }),
-    ];
+    ]
+    .to_string_pretty();
 
-    deserialization_example_print_many::<Payment_ANY_STRING>(&json_values);
-    deserialization_example_print_many::<Payment_JSON_FORMAT>(&json_values);
-    deserialization_example_print_many::<Payment_STRONG_TYPE>(&json_values);
+    deserialization_example_print_many::<Payment_ANY_STRING>(&json_strings);
+    deserialization_example_print_many::<Payment_JSON_FORMAT>(&json_strings);
+    deserialization_example_print_many::<Payment_STRONG_TYPE>(&json_strings);
 }

@@ -2,7 +2,9 @@ use std::{collections::HashSet, fmt::Display, hash::Hash, marker::PhantomData, s
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Visitor};
 use serde_json::json;
-use serde_lab::{deserialization_example_print_many, serialization_example_print_many};
+use serde_lab::{
+    ToPrettyStringMany, deserialization_example_print_many, serialization_example_print_many,
+};
 
 trait SeparatedValuesConfig {
     type Item: FromStr<Err: Display> + ToString;
@@ -13,10 +15,7 @@ struct SeparatedValuesToIteratorVisitor<
     V: FromStr<Err: Display>,
     I: FromIterator<V>,
     C: SeparatedValuesConfig<Item = V>,
-> {
-    _marker: PhantomData<(V, I, C)>,
-    expected_result: &'static str,
-}
+>(PhantomData<(V, I, C)>);
 
 impl<V, I, C> SeparatedValuesToIteratorVisitor<V, I, C>
 where
@@ -24,11 +23,8 @@ where
     I: FromIterator<V>,
     C: SeparatedValuesConfig<Item = V>,
 {
-    fn new(expected_result: &'static str) -> Self {
-        Self {
-            _marker: PhantomData,
-            expected_result,
-        }
+    fn new() -> Self {
+        Self(PhantomData)
     }
 }
 
@@ -52,7 +48,14 @@ where
     type Value = I;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str(self.expected_result)
+        formatter.write_str(
+            format!(
+                "a list of string-representations of `{}` values separated by `{}`",
+                std::any::type_name::<V>(),
+                C::SEPARATOR,
+            )
+            .as_str(),
+        )
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -74,9 +77,7 @@ trait SeparatedValuesDeserializer: SeparatedValuesConfig<Item: FromStr<Err: Disp
     where
         D: Deserializer<'de>,
     {
-        let visitor = SeparatedValuesToIteratorVisitor::<_, Vec<_>, Self>::new(
-            "a comma separated list of strings",
-        );
+        let visitor = SeparatedValuesToIteratorVisitor::<_, Vec<_>, Self>::new();
         deserializer.deserialize_str(visitor)
     }
 }
@@ -103,9 +104,7 @@ trait UniqueSeparatedValuesDeserializer:
     where
         D: Deserializer<'de>,
     {
-        let visitor = SeparatedValuesToIteratorVisitor::<_, HashSet<_>, Self>::new(
-            "a pipe separated list of Tag values",
-        );
+        let visitor = SeparatedValuesToIteratorVisitor::<_, HashSet<_>, Self>::new();
         deserializer.deserialize_str(visitor)
     }
 }
@@ -237,13 +236,13 @@ pub struct Bar {
 }
 
 fn main() {
-    let json_values = [json!({"id": 123, "tags": "qwer,asdf,zxcv"})];
+    let json_strings = [json!({"id": 123, "tags": "qwer,asdf,zxcv"})].to_string_pretty();
 
-    deserialization_example_print_many::<Foo>(&json_values);
+    deserialization_example_print_many::<Foo>(&json_strings);
 
-    let json_values = [json!({"id": 123, "tags": "Manager|Admin|Manager"})];
+    let json_strings = [json!({"id": 123, "tags": "Manager|Admin|Manager"})].to_string_pretty();
 
-    deserialization_example_print_many::<Bar>(&json_values);
+    deserialization_example_print_many::<Bar>(&json_strings);
 
     let values = [Foo {
         id: 123,

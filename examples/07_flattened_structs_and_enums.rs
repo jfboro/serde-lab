@@ -3,7 +3,10 @@ use std::net::{IpAddr, Ipv4Addr};
 use serde::{Deserialize, Serialize};
 use serde_bool::True;
 use serde_json::json;
-use serde_lab::{DELIMITER, deserialization_example_print_many, serialization_example_print_many};
+use serde_lab::{
+    DELIMITER, ToPrettyStringMany, deserialization_example_print_many,
+    serialization_example_print_many,
+};
 use serde_repr::Serialize_repr;
 
 #[derive(Debug, Serialize_repr)]
@@ -100,7 +103,7 @@ fn main() {
 
     println!("Deserialization examples:");
 
-    let json_values = [
+    let json_strings = [
         json!({
             "id": 123,
             "ip": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
@@ -139,7 +142,8 @@ fn main() {
             "off": true,
             "idle": false,
         }),
-    ];
+    ]
+    .to_string_pretty();
 
-    deserialization_example_print_many::<Machine_2>(&json_values);
+    deserialization_example_print_many::<Machine_2>(&json_strings);
 }

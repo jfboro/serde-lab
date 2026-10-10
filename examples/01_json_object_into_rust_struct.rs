@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use serde_json::json;
-use serde_lab::deserialization_example_print_many;
+use serde_lab::{ToPrettyStringMany, deserialization_example_print_many};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -12,7 +12,7 @@ pub struct PaymentStatus {
 }
 
 fn main() {
-    let json_values = [
+    let json_strings: [String; _] = [
         json! ({
             "status": "paid",
             "paidAmount": 2.71,
@@ -32,7 +32,13 @@ fn main() {
             // Valid status, but information provided. However our model accepts it. We would need to manually validate it.
             "status": "refunded"
         }),
-    ];
+        json!({
+            "status": "refunded",
+            // Field not existent in the deserialized struct:
+            "datetime": "2026-10-10T01:02:03.12345Z",
+        }),
+    ]
+    .to_string_pretty();
 
-    deserialization_example_print_many::<PaymentStatus>(&json_values)
+    deserialization_example_print_many::<PaymentStatus>(&json_strings)
 }

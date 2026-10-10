@@ -53,7 +53,7 @@ pub enum PaymentStatus {
 }
 
 fn main() {
-    let values = [
+    let values: [PaymentStatus; _] = [
         PaymentStatus::Pending,
         PaymentStatus::Denied {
             reason: DenialReason::ExpiredCreditCard,

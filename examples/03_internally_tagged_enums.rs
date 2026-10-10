@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use serde_lab::{deserialization_example_print_many, serialization_example_print_many};
+use serde_lab::{
+    ToPrettyStringMany, deserialization_example_print_many, serialization_example_print_many,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
@@ -66,7 +68,7 @@ pub enum PaymentStatus_MODIFIED {
 }
 
 fn main() {
-    let values = [
+    let values: [PaymentStatus; _] = [
         PaymentStatus::Pending,
         PaymentStatus::Denied {
             reason: DenialReason::ExpiredCreditCard,
@@ -83,7 +85,7 @@ fn main() {
 
     serialization_example_print_many(&values);
 
-    let json_values = [
+    let json_strings: [String; _] = [
         json!({
             "status": "processing" // Invalid status
         }),
@@ -110,13 +112,14 @@ fn main() {
             // missing field `paidAmount`
             "refundedAmount": 20.00,
         }),
-    ];
+    ]
+    .to_string_pretty();
 
-    deserialization_example_print_many::<PaymentStatus>(&json_values);
+    deserialization_example_print_many::<PaymentStatus>(&json_strings);
 
     println!("MODIFIED EXAMPLES:");
 
-    let values = [
+    let values: [PaymentStatus_MODIFIED; _] = [
         PaymentStatus_MODIFIED::Denied {
             reason: DenialReason_MODIFIED::ExpiredCreditCard,
         },
@@ -139,7 +142,7 @@ fn main() {
 
     serialization_example_print_many(&values);
 
-    let json_values = [
+    let json_strings: [String; _] = [
         json!({
             "status": "denied",
             "reason": "insufficient-amount",
@@ -149,7 +152,8 @@ fn main() {
             // Because this is none of the DenialReason unit-variants, it is deserialized into the `Other` variant
             "reason": "UnknownError",
         }),
-    ];
+    ]
+    .to_string_pretty();
 
-    deserialization_example_print_many::<PaymentStatus_MODIFIED>(&json_values);
+    deserialization_example_print_many::<PaymentStatus_MODIFIED>(&json_strings);
 }

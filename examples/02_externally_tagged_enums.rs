@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use serde_lab::{deserialization_example_print_many, serialization_example_print_many};
+use serde_lab::{
+    ToPrettyStringMany, deserialization_example_print_many, serialization_example_print_many,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -33,7 +35,7 @@ pub enum PaymentStatus {
 }
 
 fn main() {
-    let values = [
+    let values: [PaymentStatus; _] = [
         PaymentStatus::Pending,
         PaymentStatus::Denied {
             reason: DenialReason::ExpiredCreditCard,
@@ -50,7 +52,7 @@ fn main() {
 
     serialization_example_print_many(&values);
 
-    let json_values = [
+    let json_strings: [String; _] = [
         json!({
             "denied": {
                 "reason": "expired-credit-card",
@@ -65,7 +67,8 @@ fn main() {
                 },
             }
         }),
-    ];
+    ]
+    .to_string_pretty();
 
-    deserialization_example_print_many::<PaymentStatus>(&json_values);
+    deserialization_example_print_many::<PaymentStatus>(&json_strings);
 }
