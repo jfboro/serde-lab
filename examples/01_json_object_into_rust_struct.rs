@@ -3,7 +3,7 @@ use serde_json::json;
 use serde_lab::{ToPrettyStringMany, deserialization_example_print_many};
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase")] // notice how we can automatically rename fields
 pub struct PaymentStatus {
     pub status: String,
     pub paid_amount: Option<f64>,
